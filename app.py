@@ -39,7 +39,7 @@ def get_users():
 
 @app.route('/')
 def index():
-    return "Hello, Flask with PostgreSQL!"
+    return "Hello, yahya"
 
 if __name__ == '__main__':
     app.run(debug=True)
