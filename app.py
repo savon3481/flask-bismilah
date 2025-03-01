@@ -17,7 +17,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
 
-# Endpoint untuk menambahkan user lewat URL
+# Endpoint untuk menambahkan user dan langsung menampilkan daftar user
 @app.route('/adduser/<string:name>', methods=['GET'])
 def add_user(name):
     if not name:
@@ -27,9 +27,16 @@ def add_user(name):
     db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({"message": "User berhasil ditambahkan", "user": {"id": new_user.id, "name": new_user.name}}), 201
+    # Ambil semua user setelah penambahan
+    users = User.query.all()
+    user_list = [{"id": user.id, "name": user.name} for user in users]
 
-# Endpoint untuk menampilkan semua user
+    return jsonify({
+        "message": "User berhasil ditambahkan",
+        "user": {"id": new_user.id, "name": new_user.name},
+        "all_users": user_list
+    }), 201
+
 @app.route('/users', methods=['GET'])
 def get_users():
     users = User.query.all()
@@ -39,7 +46,7 @@ def get_users():
 
 @app.route('/')
 def index():
-    return "Hello, yahya"
+    return "Hello, Flask with PostgreSQL!"
 
 if __name__ == '__main__':
     app.run(debug=True)
