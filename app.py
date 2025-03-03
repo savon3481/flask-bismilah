@@ -1,13 +1,20 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 
 # Konfigurasi Database
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///default.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Konfigurasi Folder Upload
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # Batas 100MB
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)  # Hubungkan Flask-Migrate dengan Flask dan SQLAlchemy
@@ -17,36 +24,54 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
 
-# Endpoint untuk menambahkan user dan langsung menampilkan daftar user
-@app.route('/adduser/<string:name>', methods=['GET'])
-def add_user(name):
-    if not name:
-        return jsonify({"error": "Nama tidak boleh kosong"}), 400
+# Model Video
+class Video(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), nullable=False)
+    filepath = db.Column(db.String(255), nullable=False)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    new_user = User(name=name)
-    db.session.add(new_user)
+# Endpoint untuk menampilkan semua video
+@app.route('/videos', methods=['GET'])
+def get_videos():
+    videos = Video.query.all()
+    video_list = [{"id": video.id, "filename": video.filename, "filepath": video.filepath, "uploaded_at": video.uploaded_at} for video in videos]
+
+    return jsonify({"videos": video_list})
+
+# Endpoint untuk upload video
+@app.route('/upload', methods=['POST'])
+def upload_video():
+    if 'file' not in request.files:
+        return jsonify({"error": "Tidak ada file yang diunggah"}), 400
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({"error": "Nama file kosong"}), 400
+
+    # Simpan file ke folder upload
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+    file.save(filepath)
+
+    # Simpan info video ke database
+    new_video = Video(filename=file.filename, filepath=filepath)
+    db.session.add(new_video)
     db.session.commit()
 
-    # Ambil semua user setelah penambahan
-    users = User.query.all()
-    user_list = [{"id": user.id, "name": user.name} for user in users]
-
     return jsonify({
-        "message": "User berhasil ditambahkan",
-        "user": {"id": new_user.id, "name": new_user.name},
-        "all_users": user_list
+        "message": "Upload berhasil",
+        "video": {
+            "id": new_video.id,
+            "filename": new_video.filename,
+            "filepath": new_video.filepath,
+            "uploaded_at": new_video.uploaded_at
+        }
     }), 201
-
-@app.route('/users', methods=['GET'])
-def get_users():
-    users = User.query.all()
-    user_list = [{"id": user.id, "name": user.name} for user in users]
-
-    return jsonify({"users": user_list})
 
 @app.route('/')
 def index():
-    return "Hello, Flask with PostgreSQL!"
+    return "Hello, Flask with PostgreSQL & Video Upload!"
 
 if __name__ == '__main__':
     app.run(debug=True)
