@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import os
@@ -19,11 +19,6 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # Batas 100MB
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)  # Hubungkan Flask-Migrate dengan Flask dan SQLAlchemy
 
-# Model User
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-
 # Model Video
 class Video(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -31,15 +26,12 @@ class Video(db.Model):
     filepath = db.Column(db.String(255), nullable=False)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# Endpoint untuk menampilkan semua video
-@app.route('/videos', methods=['GET'])
-def get_videos():
-    videos = Video.query.all()
-    video_list = [{"id": video.id, "filename": video.filename, "filepath": video.filepath, "uploaded_at": video.uploaded_at} for video in videos]
+# Render Halaman Upload
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-    return jsonify({"videos": video_list})
-
-# Endpoint untuk upload video
+# Endpoint untuk Upload Video
 @app.route('/upload', methods=['POST'])
 def upload_video():
     if 'file' not in request.files:
@@ -68,10 +60,6 @@ def upload_video():
             "uploaded_at": new_video.uploaded_at
         }
     }), 201
-
-@app.route('/')
-def index():
-    return "Hello, Flask with PostgreSQL & Video Upload!"
 
 if __name__ == '__main__':
     app.run(debug=True)
