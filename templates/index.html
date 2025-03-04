@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Upload Video</title>
+    <title>Upload & Play Video</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -11,7 +11,7 @@
         margin: 50px;
       }
       .container {
-        max-width: 400px;
+        max-width: 600px;
         margin: auto;
         padding: 20px;
         border: 1px solid #ddd;
@@ -37,6 +37,19 @@
         font-weight: bold;
         color: #333;
       }
+      video {
+        width: 100%;
+        margin-top: 10px;
+        border-radius: 5px;
+        background: #000;
+      }
+      .video-item {
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: white;
+      }
     </style>
   </head>
   <body>
@@ -48,6 +61,22 @@
       </form>
       <p id="progress">Uploading...</p>
       <p id="message"></p>
+
+      <h2>Daftar Video</h2>
+      <div id="videoList">
+        {% for video in videos %}
+        <div class="video-item">
+          <p>{{ video.filename }}</p>
+          <video controls>
+            <source
+              src="{{ url_for('get_video', filename=video.filename) }}"
+              type="video/mp4"
+            />
+            Browser Anda tidak mendukung video tag.
+          </video>
+        </div>
+        {% endfor %}
+      </div>
     </div>
 
     <script>
@@ -85,6 +114,19 @@
 
               if (data.message) {
                 messageText.innerText = "Upload berhasil!";
+
+                // Tambahkan video ke daftar
+                let videoList = document.getElementById("videoList");
+                let newVideo = document.createElement("div");
+                newVideo.classList.add("video-item");
+                newVideo.innerHTML = `
+                        <p>${fileInput.name}</p>
+                        <video controls>
+                            <source src="/videos/${fileInput.name}" type="video/mp4">
+                            Browser Anda tidak mendukung video tag.
+                        </video>
+                    `;
+                videoList.prepend(newVideo);
               } else {
                 messageText.innerText = "Upload gagal: " + data.error;
               }
