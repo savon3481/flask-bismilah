@@ -1,77 +1,100 @@
 <!DOCTYPE html>
 <html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Upload Video</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 50px;
-        }
-        .container {
-            max-width: 400px;
-            margin: auto;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-        }
-        button {
-            background-color: #007BFF;
-            color: white;
-            padding: 10px;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 50px;
+      }
+      .container {
+        max-width: 400px;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+        margin-top: 10px;
+      }
+      button:disabled {
+        background-color: #aaa;
+        cursor: not-allowed;
+      }
+      #progress {
+        display: none;
+        margin-top: 10px;
+        font-weight: bold;
+        color: #333;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h2>Upload Video</h2>
-        <form id="uploadForm" enctype="multipart/form-data">
-            <input type="file" name="file" id="fileInput" required>
-            <button type="submit">Upload</button>
-        </form>
-        <p id="message"></p>
+      <h2>Upload Video</h2>
+      <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="file" id="fileInput" required />
+        <button type="submit" id="uploadBtn">Upload</button>
+      </form>
+      <p id="progress">Uploading...</p>
+      <p id="message"></p>
     </div>
 
     <script>
-        document.getElementById("uploadForm").addEventListener("submit", function(event) {
-            event.preventDefault();
-            
-            let formData = new FormData();
-            let fileInput = document.getElementById("fileInput").files[0];
-            
-            if (!fileInput) {
-                document.getElementById("message").innerText = "Pilih file terlebih dahulu!";
-                return;
-            }
+      document
+        .getElementById("uploadForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
 
-            formData.append("file", fileInput);
+          let formData = new FormData();
+          let fileInput = document.getElementById("fileInput").files[0];
+          let uploadBtn = document.getElementById("uploadBtn");
+          let progressText = document.getElementById("progress");
+          let messageText = document.getElementById("message");
 
-            fetch("/upload", {
-                method: "POST",
-                body: formData
+          if (!fileInput) {
+            messageText.innerText = "Pilih file terlebih dahulu!";
+            return;
+          }
+
+          formData.append("file", fileInput);
+
+          // Tampilkan progress upload
+          progressText.style.display = "block";
+          progressText.innerText = "Uploading...";
+          uploadBtn.disabled = true;
+
+          fetch("/upload", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              progressText.style.display = "none";
+              uploadBtn.disabled = false;
+
+              if (data.message) {
+                messageText.innerText = "Upload berhasil!";
+              } else {
+                messageText.innerText = "Upload gagal: " + data.error;
+              }
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    document.getElementById("message").innerText = "Upload berhasil!";
-                } else {
-                    document.getElementById("message").innerText = "Upload gagal: " + data.error;
-                }
-            })
-            .catch(error => {
-                document.getElementById("message").innerText = "Terjadi kesalahan!";
+            .catch((error) => {
+              progressText.style.display = "none";
+              uploadBtn.disabled = false;
+              messageText.innerText = "Terjadi kesalahan!";
             });
         });
     </script>
-</body>
+  </body>
 </html>
